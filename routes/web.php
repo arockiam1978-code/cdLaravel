@@ -16,4 +16,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
+Route::resource('sliders', App\Http\Controllers\SliderController::class);
 require __DIR__.'/settings.php';

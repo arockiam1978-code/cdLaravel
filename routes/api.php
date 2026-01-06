@@ -6,4 +6,4 @@ use Illuminate\Support\Facades\Route;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
-Route::apiResource('sliders', App\Http\Controllers\SliderController::class);
+Route::get('/sliders', [App\Http\Controllers\SliderController::class, 'indexApi'])->name('sliders.indexApi');

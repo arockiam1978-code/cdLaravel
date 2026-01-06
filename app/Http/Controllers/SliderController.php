@@ -8,13 +8,32 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Encoders\JpegEncoder;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class SliderController extends Controller
 {
     // LIST ALL
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Slider::all());
+        $sliders = Slider::all();
+        return Inertia::render('sliders/sliders', [
+            'sliders' => $sliders
+        ]);        
+
+    }
+    public function indexApi()
+    {
+        return response()->json(
+            Slider::all()->map(function ($slider) {
+                return [
+                    'id' => $slider->id,
+                    'alt' => $slider->title,
+                    'href' => $slider->link,
+                    'src' => $slider->image_url,
+                ];
+            })
+        );
     }
 
     // CREATE
@@ -22,13 +41,15 @@ class SliderController extends Controller
     {
         $request->validate([
             'title' => 'nullable|string',
-            'image' => 'required|image|mimes:jpg,jpeg,png'
+            'link' => 'nullable|string',
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp'
         ]);
 
         $path = $this->processImage($request->file('image'));
 
         $slider = Slider::create([
             'title' => $request->title,
+            'link' => $request->link,
             'image' => $path,
         ]);
 
@@ -47,19 +68,22 @@ class SliderController extends Controller
     // UPDATE
     public function update(Request $request, $id)
     {
+        dd(request()->all());
         $slider = Slider::findOrFail($id);
 
         $request->validate([
             'title' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png'
+            'link' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp'
         ]);
 
         if ($request->hasFile('image')) {
-            Storage::delete($slider->image);
+            Storage::disk('public')->delete($slider->image);
             $slider->image = $this->processImage($request->file('image'));
         }
 
         $slider->title = $request->title;
+        $slider->link = $request->link;
         $slider->save();
 
         return response()->json([
@@ -90,8 +114,7 @@ class SliderController extends Controller
             ->encode(new JpegEncoder(quality:90));
 
         $filename = 'sliders/' . uniqid() . '.jpg';
-
-        Storage::put($filename, (string) $image);
+        Storage::disk('public')->put($filename, (string) $image);
 
         return $filename;
     }
